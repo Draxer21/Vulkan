@@ -52,6 +52,31 @@ public final class ClientUi {
         return false;
     }
 
+    /** true mientras hay una pantalla de carga (recarga de recursos). */
+    public static boolean isLoadingOverlay() {
+        Minecraft mc = Minecraft.getInstance();
+        for (String name : new String[]{"getOverlay", "overlay", "getLoadingOverlay"}) {
+            try {
+                Method m = mc.getClass().getMethod(name);
+                return m.invoke(mc) != null;
+            } catch (NoSuchMethodException ignored) {
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+        for (Class<?> c = mc.getClass(); c != null; c = c.getSuperclass()) {
+            for (Field f : c.getDeclaredFields()) {
+                if (f.getName().equals("overlay") || f.getType().getSimpleName().equals("Overlay")) {
+                    try {
+                        f.setAccessible(true);
+                        return f.get(mc) != null;
+                    } catch (Throwable ignored) {}
+                }
+            }
+        }
+        return false;
+    }
+
     private static boolean invoke(Object target, String name, Class<?>[] types, Object... args) {
         try {
             Method m = target.getClass().getMethod(name, types);

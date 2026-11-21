@@ -2,7 +2,7 @@ package com.draxer.draxvulkan.perf;
 
 import com.draxer.draxvulkan.VkConfig;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
+import com.draxer.draxvulkan.core.ClientUi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +47,7 @@ public final class PipelineWarmup {
             return;
         }
         if (!enabled) return;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.getOverlay() != null) return; // recargando recursos: esperar
+        if (ClientUi.isLoadingOverlay()) return; // recargando recursos: esperar
 
         if (restartRequested) {
             restartRequested = false;
