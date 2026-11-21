@@ -54,6 +54,8 @@ public final class VulkanHud implements GuiLayer {
             lines.add(new Line("Driver", gpu.driverName() + " " + gpu.driverInfo(), VALUE));
         } else {
             lines.add(new Line("Driver", BackendInfo.driver(), VALUE));
+            String err = GpuProbe.error();
+            lines.add(err != null ? new Line("Sonda", "error: " + err, BAD) : new Line("Sonda", "iniciando...", LABEL));
         }
 
         float fps = FrameStats.avgFps();
@@ -121,18 +123,26 @@ public final class VulkanHud implements GuiLayer {
             cy += 2;
             int gx = x + pad, gw = w;
             float[] ms = FrameStats.recent(Math.min(gw, FrameStats.SIZE));
-            // líneas guía: 60 fps (16.6 ms) y 30 fps (33.3 ms) sobre una escala de 50 ms
+            // Escala adaptable: se ajusta al peor frame reciente (mínimo 5 ms, máximo 50 ms).
+            float peak = 0;
+            for (float v : ms) peak = Math.max(peak, v);
+            float scale = Math.max(5f, Math.min(50f, peak * 1.25f));
             int base = cy + graphH;
-            g.fill(gx, base - (int) (graphH * 16.6f / 50f), gx + gw, base - (int) (graphH * 16.6f / 50f) + 1, 0x4055FF55);
-            g.fill(gx, base - (int) (graphH * 33.3f / 50f), gx + gw, base - (int) (graphH * 33.3f / 50f) + 1, 0x40FFD84A);
+            for (float guide : new float[]{16.6f, 33.3f}) {
+                if (guide < scale) {
+                    int gy = base - (int) (graphH * guide / scale);
+                    g.fill(gx, gy, gx + gw, gy + 1, guide < 20 ? 0x4055FF55 : 0x40FFD84A);
+                }
+            }
             int start = gw - ms.length;
             for (int i = 0; i < ms.length; i++) {
-                float v = Math.min(ms[i], 50f);
-                int bh = Math.max(1, (int) (graphH * v / 50f));
+                float v = Math.min(ms[i], scale);
+                int bh = Math.max(1, (int) (graphH * v / scale));
                 int col = ms[i] > 33.3f ? 0xC0FF5555 : ms[i] > 16.7f ? 0xC0FFD84A : 0xC055FF55;
                 int px = gx + start + i;
                 g.fill(px, base - bh, px + 1, base, col);
             }
+            g.text(font, String.format("%.0f ms", scale), gx + gw - font.width(String.format("%.0f ms", scale)), cy, LABEL, false);
         }
     }
 

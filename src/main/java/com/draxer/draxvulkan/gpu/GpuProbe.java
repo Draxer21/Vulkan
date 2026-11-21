@@ -52,6 +52,13 @@ public final class GpuProbe {
 
     private GpuProbe() {}
 
+    /** Inicia la sonda en un hilo aparte para no trabar el arranque. */
+    public static void initAsync() {
+        Thread t = new Thread(GpuProbe::init, "DraxVulkan-GpuProbeInit");
+        t.setDaemon(true);
+        t.start();
+    }
+
     public static synchronized void init() {
         if (initDone) return;
         initDone = true;
@@ -65,11 +72,15 @@ public final class GpuProbe {
                 // ¿Hay portability enumeration? (necesario en macOS/MoltenVK)
                 IntBuffer extCount = stack.mallocInt(1);
                 vkEnumerateInstanceExtensionProperties((String) null, extCount, null);
-                VkExtensionProperties.Buffer exts = VkExtensionProperties.malloc(extCount.get(0), stack);
-                vkEnumerateInstanceExtensionProperties((String) null, extCount, exts);
+                VkExtensionProperties.Buffer exts = VkExtensionProperties.calloc(extCount.get(0));
                 boolean portability = false;
-                for (int i = 0; i < exts.capacity(); i++) {
-                    if ("VK_KHR_portability_enumeration".equals(exts.get(i).extensionNameString())) portability = true;
+                try {
+                    vkEnumerateInstanceExtensionProperties((String) null, extCount, exts);
+                    for (int i = 0; i < exts.capacity(); i++) {
+                        if ("VK_KHR_portability_enumeration".equals(exts.get(i).extensionNameString())) portability = true;
+                    }
+                } finally {
+                    exts.free();
                 }
 
                 VkApplicationInfo app = VkApplicationInfo.calloc(stack)
@@ -99,17 +110,23 @@ public final class GpuProbe {
                 vkEnumeratePhysicalDevices(instance, count, devs);
                 for (int i = 0; i < devs.capacity(); i++) {
                     VkPhysicalDevice pd = new VkPhysicalDevice(devs.get(i), instance);
-                    DEVICES.add(pd);
-                    GPUS.add(describe(i, pd));
+                    try {
+                        GpuProbe.Gpu g = describe(DEVICES.size(), pd);
+                        DEVICES.add(pd);
+                        GPUS.add(g);
+                    } catch (Throwable t) {
+                        DraxVulkan.LOG.warn("GpuProbe: no se pudo leer la GPU {}", i, t);
+                    }
                 }
             }
             ready = true;
+            if (GPUS.isEmpty()) error = "0 GPU enumeradas";
             DraxVulkan.LOG.info("GpuProbe: {} GPU(s) detectadas", GPUS.size());
             for (Gpu g : GPUS) {
                 DraxVulkan.LOG.info("  [{}] {} ({}, {}) driver={} {}", g.index(), g.name(), g.type(), g.vendorName(), g.driverName(), g.driverInfo());
             }
         } catch (Throwable t) {
-            error = t.getClass().getSimpleName() + ": " + t.getMessage();
+            error = t.getClass().getSimpleName() + (t.getMessage() != null ? ": " + t.getMessage() : "");
             DraxVulkan.LOG.warn("GpuProbe: no se pudo iniciar la sonda Vulkan", t);
         }
     }
@@ -153,10 +170,15 @@ public final class GpuProbe {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer c = stack.mallocInt(1);
             vkEnumerateDeviceExtensionProperties(pd, (String) null, c, null);
-            VkExtensionProperties.Buffer b = VkExtensionProperties.malloc(c.get(0), stack);
-            vkEnumerateDeviceExtensionProperties(pd, (String) null, c, b);
-            for (int i = 0; i < b.capacity(); i++) {
-                if (name.equals(b.get(i).extensionNameString())) return true;
+            // En memoria normal: las GPU tienen cientos de extensiones y no caben en la pila de 64 KB de LWJGL.
+            VkExtensionProperties.Buffer b = VkExtensionProperties.calloc(c.get(0));
+            try {
+                vkEnumerateDeviceExtensionProperties(pd, (String) null, c, b);
+                for (int i = 0; i < b.capacity(); i++) {
+                    if (name.equals(b.get(i).extensionNameString())) return true;
+                }
+            } finally {
+                b.free();
             }
         }
         return false;
