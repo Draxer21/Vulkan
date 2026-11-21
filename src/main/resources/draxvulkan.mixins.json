@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.draxer.draxvulkan.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "GpuSurfaceMixin",
+    "GpuDeviceMixin",
+    "VulkanBackendMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

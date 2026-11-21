@@ -1,0 +1,7 @@
+{
+  "key.draxvulkan.toggle_hud": "Mostrar/ocultar HUD de Vulkan",
+  "draxvulkan.configuration.title": "Drax Vulkan",
+  "draxvulkan.configuration.hud": "HUD",
+  "draxvulkan.configuration.crashGuard": "Protección contra crashes",
+  "draxvulkan.configuration.compat": "Compatibilidad"
+}
