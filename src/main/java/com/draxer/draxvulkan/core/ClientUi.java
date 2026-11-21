@@ -52,6 +52,26 @@ public final class ClientUi {
         return false;
     }
 
+    private static Method focusMethod;
+    private static boolean focusLookupDone = false;
+
+    /** true si la ventana del juego tiene el foco (si no se puede saber, true). */
+    public static boolean isWindowFocused() {
+        Minecraft mc = Minecraft.getInstance();
+        try {
+            if (!focusLookupDone) {
+                focusLookupDone = true;
+                for (String n : new String[]{"isWindowActive", "isFocused"}) {
+                    try { focusMethod = mc.getClass().getMethod(n); break; } catch (NoSuchMethodException ignored) {}
+                }
+            }
+            if (focusMethod != null) return (boolean) focusMethod.invoke(mc);
+            return mc.getWindow().isFocused();
+        } catch (Throwable t) {
+            return true;
+        }
+    }
+
     /** true mientras hay una pantalla de carga (recarga de recursos). */
     public static boolean isLoadingOverlay() {
         Minecraft mc = Minecraft.getInstance();

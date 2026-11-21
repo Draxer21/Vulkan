@@ -17,6 +17,11 @@ public final class FrameStats {
 
     public static void onFrame() {
         long now = System.nanoTime();
+        // Sin foco Minecraft limita los FPS a propósito: esos frames no cuentan.
+        if (!ClientUi.isWindowFocused()) {
+            last = 0;
+            return;
+        }
         if (last != 0) {
             float ms = (now - last) / 1_000_000f;
             if (ms < 5000f) { // ignora pausas enormes (pantallas de carga, alt-tab)
