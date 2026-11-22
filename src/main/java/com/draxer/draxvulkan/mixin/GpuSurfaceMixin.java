@@ -15,4 +15,9 @@ public abstract class GpuSurfaceMixin {
     private void draxvulkan$choosePresentMode(@Coerce Object configuration, CallbackInfo ci) {
         PresentModeControl.onConfigure(this, configuration, ci);
     }
+
+    @Inject(method = "configure", at = @At("TAIL"))
+    private void draxvulkan$afterConfigure(@Coerce Object configuration, CallbackInfo ci) {
+        PresentModeControl.afterConfigure(this, configuration);
+    }
 }

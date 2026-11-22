@@ -11,6 +11,8 @@ import com.draxer.draxvulkan.core.InternalsDump;
 import com.draxer.draxvulkan.VkConfig;
 import com.draxer.draxvulkan.gpu.GpuPreference;
 import com.draxer.draxvulkan.gpu.GpuProbe;
+import com.draxer.draxvulkan.core.QuickRestart;
+import com.draxer.draxvulkan.perf.Bench;
 import com.draxer.draxvulkan.perf.PipelineWarmup;
 import com.draxer.draxvulkan.perf.PresentModeControl;
 import com.draxer.draxvulkan.gpu.GpuSelector;
@@ -56,6 +58,14 @@ public final class VulkanCommand {
                             CompatScanner.scanAsync();
                             return say(c, "Escaneando mods en segundo plano... usa /draxvulkan compat en unos segundos.");
                         })))
+                .then(Commands.literal("switch")
+                        .executes(c -> doSwitch(c, QuickRestart.otherApi()))
+                        .then(Commands.literal("vulkan").executes(c -> doSwitch(c, "vulkan")))
+                        .then(Commands.literal("opengl").executes(c -> doSwitch(c, "opengl"))))
+                .then(Commands.literal("bench")
+                        .executes(c -> bench(c, 30))
+                        .then(Commands.argument("segundos", IntegerArgumentType.integer(5, 300))
+                                .executes(c -> bench(c, IntegerArgumentType.getInteger(c, "segundos")))))
                 .then(Commands.literal("dump").executes(VulkanCommand::dump)));
     }
 
@@ -65,7 +75,9 @@ public final class VulkanCommand {
         say(c, "§e/draxvulkan hud§7 — mostrar/ocultar el HUD (o F8)");
         say(c, "§e/draxvulkan gpus§7 — listar GPU · §e/draxvulkan gpu <n|auto>§7 — elegir GPU (al reiniciar)");
         say(c, "§e/draxvulkan present <smart|mailbox|immediate|fifo|fifo_relaxed|vanilla>§7 — modo de presentación");
-        say(c, "§e/draxvulkan backend <vulkan|opengl|default>§7 — cambiar API gráfica");
+        say(c, "§e/draxvulkan switch [vulkan|opengl]§7 — cambiar de API con reinicio rápido (vuelve al mismo mundo)");
+        say(c, "§e/draxvulkan bench [segundos]§7 — medir rendimiento y comparar Vulkan vs OpenGL");
+        say(c, "§e/draxvulkan backend <vulkan|opengl|default>§7 — cambiar API gráfica (sin reiniciar)");
         say(c, "§e/draxvulkan compat§7 — mods que usan OpenGL directo");
         say(c, "§e/draxvulkan dump§7 — volcar estructura interna (para afinar el mod)");
         return 1;
@@ -167,6 +179,20 @@ public final class VulkanCommand {
         } catch (Exception e) {
             return say(c, "§cError: " + e.getMessage());
         }
+    }
+
+    private static int doSwitch(CommandContext<CommandSourceStack> c, String api) {
+        if (BackendInfo.backendName().toLowerCase().contains(api.equals("opengl") ? "gl" : "vulkan")) {
+            return say(c, "§7Ya estás usando " + api + ".");
+        }
+        say(c, "§aCambiando a §f" + api + "§a: el juego se guarda, se cierra y se vuelve a abrir en este mundo...");
+        var err = QuickRestart.switchTo(api);
+        return err.map(e -> say(c, "§c" + e)).orElse(1);
+    }
+
+    private static int bench(CommandContext<CommandSourceStack> c, int seconds) {
+        if (!Bench.start(seconds)) return say(c, "§7Ya hay un benchmark en curso.");
+        return say(c, "§aBenchmark de " + seconds + " s iniciado. §7Quédate quieto mirando el mismo lugar; el resultado sale en el chat.");
     }
 
     private static int backend(CommandContext<CommandSourceStack> c, String value) {

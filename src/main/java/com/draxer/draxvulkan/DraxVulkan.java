@@ -28,6 +28,9 @@ import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.minecraft.client.gui.components.Button;
+import com.draxer.draxvulkan.core.QuickRestart;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
@@ -39,7 +42,7 @@ import org.slf4j.LoggerFactory;
 @Mod(value = DraxVulkan.MODID, dist = Dist.CLIENT)
 public final class DraxVulkan {
     public static final String MODID = "draxvulkan";
-    public static final String VERSION = "0.2.2";
+    public static final String VERSION = "0.3.0";
     public static final Logger LOG = LoggerFactory.getLogger("DraxVulkan");
 
     public static final KeyMapping TOGGLE_HUD = new KeyMapping(
@@ -68,6 +71,7 @@ public final class DraxVulkan {
         NeoForge.EVENT_BUS.addListener(this::onCommands);
         NeoForge.EVENT_BUS.addListener(this::onLogin);
         NeoForge.EVENT_BUS.addListener(this::onShutdown);
+        NeoForge.EVENT_BUS.addListener(this::onScreenInit);
     }
 
     private void onClientSetup(FMLClientSetupEvent event) {
@@ -129,6 +133,29 @@ public final class DraxVulkan {
                         "§6[Drax Vulkan] §e" + n + " mod(s) usan OpenGL directo y pueden fallar con Vulkan. §7Usa /draxvulkan compat"));
             }
         }
+    }
+
+    /** Botón "Cambiar a OpenGL/Vulkan" en el menú de Video. */
+    private void onScreenInit(ScreenEvent.Init.Post event) {
+        if (!event.getScreen().getClass().getSimpleName().contains("VideoSettings")) return;
+        try {
+            if (!VkConfig.QUICK_RESTART_BUTTON.get()) return;
+        } catch (Throwable notLoaded) {
+            return;
+        }
+        String target = QuickRestart.otherApi();
+        String label = "§e⟳ §fCambiar a " + (target.equals("vulkan") ? "Vulkan" : "OpenGL");
+        int w = 130;
+        Button button = Button.builder(Component.literal(label), b -> {
+                    var err = QuickRestart.switchTo(target);
+                    err.ifPresent(e -> {
+                        b.setMessage(Component.literal("§cNo se pudo, mira el log"));
+                        LOG.warn("Reinicio rápido: {}", e);
+                    });
+                })
+                .bounds(event.getScreen().width - w - 4, 4, w, 20)
+                .build();
+        event.addListener(button);
     }
 
     private void onShutdown(GameShuttingDownEvent event) {

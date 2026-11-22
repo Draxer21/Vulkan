@@ -19,6 +19,10 @@ public final class VkConfig {
     public static final ModConfigSpec.BooleanValue PRECOMPILE_PIPELINES;
     public static final ModConfigSpec.IntValue PRECOMPILE_PER_TICK;
 
+    // --- Reinicio rápido ---
+    public static final ModConfigSpec.BooleanValue QUICK_RESTART_BUTTON;
+    public static final ModConfigSpec.BooleanValue QUICK_RESTART_REJOIN;
+
     // --- Protección contra crashes ---
     public static final ModConfigSpec.BooleanValue CRASH_GUARD;
     public static final ModConfigSpec.IntValue CRASH_THRESHOLD;
@@ -37,10 +41,15 @@ public final class VkConfig {
         B.pop();
 
         B.push("performance");
-        PRESENT_MODE = B.comment("Modo de presentación Vulkan. SMART: MAILBOX con vsync apagado (sin tearing), FIFO_RELAXED con vsync encendido (sin caídas a 30 FPS). VANILLA: no tocar.")
+        PRESENT_MODE = B.comment("Modo de presentación. Vulkan SMART: MAILBOX con vsync apagado (sin tearing), FIFO_RELAXED con vsync encendido (sin caídas a 30 FPS). OpenGL SMART: vsync adaptativo cuando el vsync está encendido. VANILLA: no tocar.")
                 .defineEnum("presentMode", PresentModeControl.Mode.SMART);
-        PRECOMPILE_PIPELINES = B.comment("Precompilar los pipelines de render en segundo plano para evitar tirones la primera vez que algo aparece").define("precompilePipelines", true);
+        PRECOMPILE_PIPELINES = B.comment("(Vulkan y OpenGL) Precompilar los pipelines de render en segundo plano para evitar tirones la primera vez que algo aparece").define("precompilePipelines", true);
         PRECOMPILE_PER_TICK = B.comment("Pipelines a precompilar por tick (máximo ~4 ms por tick)").defineInRange("precompilePerTick", 3, 1, 32);
+        B.pop();
+
+        B.push("quickRestart");
+        QUICK_RESTART_BUTTON = B.comment("Mostrar el botón de cambio de API en el menú de Video").define("videoButton", true);
+        QUICK_RESTART_REJOIN = B.comment("Al reiniciar, volver automáticamente al mismo mundo o servidor (Quick Play)").define("rejoin", true);
         B.pop();
 
         B.push("crashGuard");

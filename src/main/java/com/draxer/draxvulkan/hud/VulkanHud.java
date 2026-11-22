@@ -7,6 +7,7 @@ import com.draxer.draxvulkan.core.BackendInfo;
 import com.draxer.draxvulkan.core.ClientUi;
 import com.draxer.draxvulkan.core.FrameStats;
 import com.draxer.draxvulkan.gpu.GpuProbe;
+import com.draxer.draxvulkan.perf.Bench;
 import com.draxer.draxvulkan.perf.PipelineWarmup;
 import com.draxer.draxvulkan.perf.PresentModeControl;
 import net.minecraft.client.DeltaTracker;
@@ -73,7 +74,10 @@ public final class VulkanHud implements GuiLayer {
             lines.add(new Line("VRAM", mb(gpu.deviceLocalBytes()) + " total (sin VK_EXT_memory_budget)", LABEL));
         }
 
-        if (vk) {
+        if (Bench.isRunning()) {
+            lines.add(new Line("Bench", "midiendo... " + Bench.secondsLeft() + " s (no muevas la cámara)", WARN));
+        }
+        {
             String applied = PresentModeControl.appliedMode();
             String vanilla = PresentModeControl.vanillaMode();
             lines.add(new Line("Present", applied.equals(vanilla) ? applied : applied + " §7(vanilla " + vanilla + ")",

@@ -20,11 +20,13 @@ public final class FrameStats {
         // Sin foco Minecraft limita los FPS a propósito: esos frames no cuentan.
         if (!ClientUi.isWindowFocused()) {
             last = 0;
+            com.draxer.draxvulkan.perf.Bench.abort("la ventana perdió el foco");
             return;
         }
         if (last != 0) {
             float ms = (now - last) / 1_000_000f;
             if (ms < 5000f) { // ignora pausas enormes (pantallas de carga, alt-tab)
+                com.draxer.draxvulkan.perf.Bench.onFrame(ms);
                 MS[head] = ms;
                 head = (head + 1) % SIZE;
                 if (count < SIZE) count++;

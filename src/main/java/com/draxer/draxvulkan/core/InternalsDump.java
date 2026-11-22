@@ -37,12 +37,28 @@ public final class InternalsDump {
             "com.mojang.blaze3d.systems.HintsAndWorkarounds",
             "com.mojang.blaze3d.platform.Window",
             "net.minecraft.client.PreferredGraphicsApi",
+            // Backend OpenGL
+            "com.mojang.blaze3d.opengl.GlBackend",
+            "com.mojang.blaze3d.opengl.GlDevice",
+            "com.mojang.blaze3d.opengl.GlCommandEncoder",
+            "com.mojang.blaze3d.opengl.GlRenderPass",
+            "com.mojang.blaze3d.opengl.GlProgram",
+            "com.mojang.blaze3d.opengl.GlRenderPipeline",
+            "com.mojang.blaze3d.opengl.GlBuffer",
+            "com.mojang.blaze3d.opengl.GlTexture",
+            "com.mojang.blaze3d.opengl.GlStateManager",
+            "com.mojang.blaze3d.opengl.GlSurface",
+            "com.mojang.blaze3d.opengl.GlGpuSurface",
+            "com.mojang.blaze3d.opengl.BufferStorage",
+            "com.mojang.blaze3d.opengl.DirectStateAccess",
+            "com.mojang.blaze3d.opengl.GlFence",
+            "com.mojang.blaze3d.opengl.GlConst",
     };
 
     private InternalsDump() {}
 
     public static Path write() throws Exception {
-        Path out = FMLPaths.CONFIGDIR.get().resolve("draxvulkan").resolve("internals-26.2.txt");
+        Path out = FMLPaths.CONFIGDIR.get().resolve("draxvulkan").resolve("internals-26.2-" + (BackendInfo.isVulkan() ? "vulkan" : "opengl") + ".txt");
         Files.createDirectories(out.getParent());
         StringBuilder sb = new StringBuilder("# Drax Vulkan - estructura interna del renderizador\n");
         sb.append("# Backend: ").append(BackendInfo.backendName()).append(" | GPU: ").append(BackendInfo.gpuName()).append("\n\n");
@@ -71,6 +87,22 @@ public final class InternalsDump {
         for (String n : CLASSES) {
             try { todo.add(Class.forName(n)); } catch (Throwable ignored) {}
         }
+        // Clases reales del backend interno (GpuDevice.backend y sus campos com.mojang)
+        try {
+            Object dev = RenderSystem.getDevice();
+            Object backend = dev.getClass().getMethod("getBackend").invoke(dev);
+            if (backend != null) {
+                todo.add(backend.getClass());
+                for (Field f : backend.getClass().getDeclaredFields()) {
+                    if (Modifier.isStatic(f.getModifiers())) continue;
+                    try {
+                        f.setAccessible(true);
+                        Object v = f.get(backend);
+                        if (v != null && v.getClass().getName().startsWith("com.mojang")) todo.add(v.getClass());
+                    } catch (Throwable ignored) {}
+                }
+            }
+        } catch (Throwable ignored) {}
         // Clases anidadas de GpuSurface (Configuration, PresentMode...)
         for (Class<?> c : new java.util.ArrayList<>(todo)) {
             if (c.getName().endsWith("GpuSurface") || c.getName().endsWith("VulkanGpuSurface")) {

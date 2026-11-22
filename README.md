@@ -1,4 +1,4 @@
-# Drax Vulkan 0.2.0 (Minecraft 26.2 · NeoForge)
+# Drax Vulkan 0.3.0 (Minecraft 26.2 · NeoForge)
 
 Mod solo de cliente que mejora el uso del backend **Vulkan** que trae Minecraft desde 26.2.
 
@@ -14,7 +14,10 @@ Mod solo de cliente que mejora el uso del backend **Vulkan** que trae Minecraft 
 | Rendimiento | **Modo de presentación** (mixin en `GpuSurface.configure`): SMART usa MAILBOX con vsync apagado (sin tearing) y FIFO_RELAXED con vsync encendido (sin caídas a 30 FPS). `/draxvulkan present <modo>` lo cambia en vivo |
 | Rendimiento | **Precompilación de pipelines**: compila en segundo plano (máx. ~4 ms por tick) todos los `RenderPipelines` de vanilla para evitar tirones la primera vez que algo aparece; se repite tras recargar recursos |
 | GPU | **Selección real de GPU** (mixin en `VulkanBackend.isDeviceSuitable`): `/draxvulkan gpu <n>` o `gpu auto`, se aplica al reiniciar |
-| Otros | `/draxvulkan backend <vulkan|opengl|default>` · `/draxvulkan dump` |
+| Cambio de API | **Reinicio rápido**: botón en Video o `/draxvulkan switch [vulkan|opengl]`. Guarda, cierra y vuelve a abrir el juego con los mismos argumentos, entrando directo al mismo mundo o servidor (Quick Play) |
+| OpenGL | **Vsync adaptativo** (swap interval -1, si el driver soporta `*_EXT_swap_control_tear`) con presentMode SMART. La precompilación de pipelines también funciona en OpenGL |
+| Comparar | `/draxvulkan bench [segundos]`: FPS promedio, 1 % y 0,1 % bajos y pico; guarda el resultado por API y compara Vulkan contra OpenGL |
+| Otros | `/draxvulkan backend <vulkan|opengl|default>` · `/draxvulkan dump` (ahora también vuelca el backend OpenGL) |
 
 Configuración: Mods → Drax Vulkan → Config (o `config/draxvulkan-client.toml`).
 
